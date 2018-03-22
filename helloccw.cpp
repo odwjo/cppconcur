@@ -19,14 +19,14 @@ struct Func{
     int &i;
     Func(int& i_):i(i_){}
 
-    void operator()(){
-        std::cout << "Hello *^* from func"
-                  << std::endl;
+    void operator()(int it){
+        std::cout << "Hello *^* from func -> "
+                  << it << std::endl;
     }
 };
 
 void do_in_current_thread(){
-    std::cout << "Hello *_* from current"
+    std::cout << "Hello *_* from current -> "
               << std::endl;
 }
 
@@ -34,7 +34,7 @@ void do_in_current_thread(){
 void ff(){
     int ilcl = 0;
     Func f(ilcl);
-    std::thread t(f);
+    std::thread t(f, 999);
 
     thread_guard g(t);
 
