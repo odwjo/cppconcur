@@ -9,6 +9,7 @@ using namespace std;
 int main(int argc, char *argv[])
 {
     //ff();
-    test_Solution();
+    //test_Solution();
+    use_thrdsafe_stack();
     return 0;
 }

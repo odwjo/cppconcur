@@ -3,6 +3,7 @@
 #include <exception>
 #include <algorithm>//std::min,
 #include <iterator>//std::distance, std::advance
+#include <functional>//std::mem_fn
 
 class thread_guard{
     std::thread& t;
