@@ -8,6 +8,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    ff();
+    //ff();
+    test_Solution();
     return 0;
 }

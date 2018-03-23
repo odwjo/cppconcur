@@ -6,13 +6,15 @@ class Solution {
 public:
     bool isMatch(string s, string p) {
         string temps;
-        size_t fs = 0;
+        //size_t fs = 0;
         size_t ss, sp;
         ss = sp = 0;
         size_t fp = 0;
         int fg;
         char ct;
-        while(fs != s.size()){
+
+        while(ss != s.size()){
+            int cd = 0;//".*...a" M "cba" -false;
             fg = 0;
             sp = fp;
             while(fp != p.size()){
@@ -37,11 +39,15 @@ public:
                         fp += 2;
                         while((fp != p.size() && (p[fp]=='.'))
                            || (fp != (p.size()-1) && (p[fp+1]=='*'))){
+                            if(p[fp] == '.')
+                                cd ++;
                             ++ fp;
                             if(fp == p.size())
                                 return true;
-                            if(p[fp] == '*')
+                            if(p[fp] == '*'){
                                 ++ fp;
+                                cd = 0;
+                            }
                         }
                         break;
                     }
@@ -63,6 +69,9 @@ public:
                 ++ ss;
             else if(ct == '*'){
                 //cout << p.size() << endl;
+                if((ss+cd) >= s.size())
+                    return false;
+                ss += cd;
                 if(fp == p.size())
                     return true;
                 char tct1 = p[fp];
@@ -76,19 +85,19 @@ public:
                         return false;
                 }
 
-                while(sp != s.size()){
-                    if(s[sp] != tct1)
-                            ++ sp;
+                while(ss != s.size()){//ss point to ccurent pos of s
+                    if(s[ss] != tct1)
+                            ++ ss;
                     else{
-                        if((sp == (p.size()-1)))
+                        if((ss == (s.size()-1)))
                             return false;
-                        else if(s[sp+1] != tct2)
+                        else if(s[ss+1] != tct2)
                             ++ sp;
-                        else if(isMatch(s.substr(sp,s.size()),
+                        else if(isMatch(s.substr(ss,s.size()),
                                         p.substr(fp,p.size())))
                             return true;
                         else
-                            sp += 2;
+                            ss += 2;
                     }
                 }
 
@@ -105,15 +114,15 @@ public:
                     return true;
             else if(fp == p.size())
                 return false;
-            fs = ss;
+            //fs = ss;
         }
         return true;
     }
 };
 
 int test_Solution(){
-    string s1 = "abcesdsdced";
-    string s2 = ".*ced";
+    string s1 = "acd";
+    string s2 = ".*...d";
     Solution sltn;
     cout << sltn.isMatch(s1,s2) << endl;
     return 0;

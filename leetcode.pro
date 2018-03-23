@@ -5,7 +5,8 @@ CONFIG -= qt
 
 SOURCES += main.cpp \
     regexfordotandstar.cpp \
-    helloccw.cpp
+    helloccw.cpp \
+    share_data_between_thrds.cpp
 
 LIBS += -lpthread
 
