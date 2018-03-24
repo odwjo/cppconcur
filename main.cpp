@@ -10,6 +10,7 @@ int main(int argc, char *argv[])
 {
     //ff();
     //test_Solution();
-    use_thrdsafe_stack();
+    //use_thrdsafe_stack();
+    test_hierarchy_mutex();
     return 0;
 }

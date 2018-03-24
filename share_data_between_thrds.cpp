@@ -122,7 +122,7 @@ void use_thrdsafe_stack(){
 }
 
 //using std::lock() and std::lock_guard in a swap operation
-void swap(some_big_object &lhs, some_big_object& rhs);
+/*void swap(some_big_object &lhs, some_big_object& rhs);
 class X{
 private:
     some_big_object some_detail;
@@ -140,15 +140,17 @@ public:
         swap(lhs.some_detail, rhs.some_detail);
     }
 
-};
+};*/
 //hierarchical_mutex
+//lock  : this_hv -> previous_hv,hv -> this_hv
+//unlock: this_hv <- previous_hv
 class hierarchical_mutex{
     std::mutex internal_mutex;
     unsigned long const hierarchy_value;
     unsigned long previous_hierarchy_value;
     static thread_local unsigned long this_thread_hierarchy_value;
 
-    void chect_for_hierarchy_violation(){//in this thread,the new hierarchy_value should be smaller.
+    void check_for_hierarchy_violation(){//in this thread,the new hierarchy_value should be smaller.
         if(this_thread_hierarchy_value < hierarchy_value){
             throw std::logic_error("mutex hierarchy violated");
         }
@@ -182,3 +184,33 @@ public:
 thread_local unsigned long hierarchical_mutex::this_thread_hierarchy_value(ULONG_MAX);
 //so the key point is using a thread_local value to label the new value seted by
 //the new hierarchy_mutex instance.
+hierarchical_mutex hm(10000);
+hierarchical_mutex lm(500);
+
+void high_rank(){
+    std::lock_guard<hierarchical_mutex> hk(hm);
+    std::cout << "In high rank." << std::endl;
+}
+void low_rank(){
+    std::lock_guard<hierarchical_mutex> lk(lm);
+    std::cout << "In high rank." << std::endl;
+}
+
+void usual(){
+    high_rank();
+    low_rank();
+}
+void unusual(){
+    try{
+        std::lock_guard<hierarchical_mutex> lk(lm);
+        std::lock_guard<hierarchical_mutex> hk(hm);
+    }catch(std::exception e){
+        std::cout << e.what() << std::endl;
+    }
+
+}
+
+void test_hierarchy_mutex(){
+    usual();
+    unusual();
+}

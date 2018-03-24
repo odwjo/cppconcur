@@ -39,14 +39,18 @@ public:
                         fp += 2;
                         while((fp != p.size() && (p[fp]=='.'))
                            || (fp != (p.size()-1) && (p[fp+1]=='*'))){
-                            if(p[fp] == '.')
+                            int df = 0;
+                            if(p[fp] == '.'){
                                 cd ++;
+                                df = 1;
+                            }
                             ++ fp;
                             if(fp == p.size())
                                 return true;
                             if(p[fp] == '*'){
                                 ++ fp;
-                                cd = 0;
+                                if(df == 1)
+                                    -- cd;
                             }
                         }
                         break;
