@@ -11,6 +11,7 @@ int main(int argc, char *argv[])
     //ff();
     //test_Solution();
     //use_thrdsafe_stack();
-    test_hierarchy_mutex();
+    //test_hierarchy_mutex();
+    //foo1();
     return 0;
 }

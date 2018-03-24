@@ -214,3 +214,70 @@ void test_hierarchy_mutex(){
     usual();
     unusual();
 }
+
+//std::unique_lock<std::mutex> lock_a(lhs.m, std::defer_lock);
+/*transfer ownership of a mutex
+ *std::unique_lock<std::mutex> get_lock(){
+ *    std::mutex sm;
+ *    std::unique_lock<std::mutex> lk(sm);
+ *    do_something();
+ *    return lk;
+ * }
+ * void prodess_data(){
+ *    std::unique_lock<std::mutex> lk(get_lock());
+ *    do_something_else();
+ * }
+*/
+//protecting shared data during initialization
+/*
+class some_resource{public:void do_something(){}};
+std::shared_ptr<some_resource> resource_ptr;
+std::mutex resource_mutex;
+void foo0(){// race condition exists
+    if(!resource_ptr){
+        std::lock_guard<std::mutex> lk(resource_mutex);
+        if(!resource_ptr){
+            resource_ptr.reset(new some_resource);
+        }
+        resource_ptr.reset(new some_resource);
+    }
+    resource_ptr->do_something();
+}
+
+std::once_flag resource_flag;
+void init_resource(){
+    resource_ptr.reset(new some_resource);
+}
+void foo1(){
+    std::call_once(resource_flag,init_resource);
+    resource_ptr->do_something();
+}
+class X{
+private:
+    connection_info connection_details;
+    connection_handle connection;
+    std::once_flag connection_init_flag;
+
+    void open_connection(){
+        connection = connection_manager.open(connection_details);
+    }
+public:
+    X(connection_info const& connection_details_):
+        connection_details(connection_details_){}
+    void send_data(data_packet const &data){
+        std::call_once(connection_init_flag, &X::open_connection, this);
+        connection.send_data(data);
+    }
+    data_packet receive_data(){
+        std::call_once(connection_init_flag, &X::open_connection, this);
+        return connection.receive_data();
+    }
+};
+
+class some_class;
+some_class& get_my_class_instance(){
+    static my_class instance;//thread-safe
+    return instance;
+}
+*/
+
