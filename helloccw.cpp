@@ -18,6 +18,16 @@ public:
     thread_guard& operator=(const std::thread& t_)=delete;
 };
 
+void just_add(){
+    int sum = 0;
+    for(size_t i = 0;i != 10000;++ i)
+        ++ sum;
+}
+
+void use_th_gd(){
+    thread_guard tg1(std::thread(just_add)),tg2(std::thread(just_add));
+}
+
 class scoped_thread{
     std::thread t;
 public:

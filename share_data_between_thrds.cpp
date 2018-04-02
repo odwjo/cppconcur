@@ -47,9 +47,9 @@ some_data *unprotected;
 void malicious_function(some_data &protected_data){
     unprotected = &protected_data;
 }
-data_wrapper x;
+data_wrapper xdw;
 void foo(){
-    x.process_data(malicious_function);
+    xdw.process_data(malicious_function);
     //unprotected->do_something();
 }
 
@@ -280,4 +280,6 @@ some_class& get_my_class_instance(){
     return instance;
 }
 */
-
+//use std::recursive_mutex can be locked multitimes
+//See one member-func want to call another member-func
+//But it's quick-and-dirty, should extract a new private member function.

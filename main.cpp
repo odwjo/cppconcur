@@ -2,7 +2,10 @@
 #include <functional>//std::ref, std::bind, std::mem_fn
 #include <utility>//std::move
 #include <algorithm>//std::for_each
+#include <list>
 #include "cppconcurrent.h"
+#include "threadsafe_lookup_table.h"
+#include <atomic>
 
 using namespace std;
 
@@ -13,5 +16,11 @@ int main(int argc, char *argv[])
     //use_thrdsafe_stack();
     //test_hierarchy_mutex();
     //foo1();
+    //test_wait();
+    //test_fu0();
+    //use_clock();
+    //test_sequential_quick_sort();
+    //drive2();
+    //threadsafe_lookup_table_v1<int, int> lt;
     return 0;
 }
