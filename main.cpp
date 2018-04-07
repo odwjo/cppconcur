@@ -6,6 +6,7 @@
 #include "cppconcurrent.h"
 #include "threadsafe_lookup_table.h"
 #include <atomic>
+#include <memory>
 
 using namespace std;
 
@@ -22,5 +23,7 @@ int main(int argc, char *argv[])
     //test_sequential_quick_sort();
     //drive2();
     //threadsafe_lookup_table_v1<int, int> lt;
+    //auto sp = std::shared_ptr<int>();
+    //std::cout << std::atomic_is_lock_free(&sp) << std::endl;
     return 0;
 }

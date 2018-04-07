@@ -23,5 +23,7 @@ HEADERS += \
     functional_programming \
     threadsafe_queue.h \
     threadsafe_lookup_table.h \
-    threadsafe_list.h
+    threadsafe_list.h \
+    threadsafe_datastructure_nolocks.h \
+    hazard_pointer.h
 
