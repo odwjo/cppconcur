@@ -20,6 +20,7 @@ int test_fu0(){//std::async() returns a std::future<>
     std::future<int> answer = std::async(find_the_answer_to_ltuae);
     do_other_stuff();
     std::cout << "The answer is " << answer.get() << std::endl;
+    return answer.get();
 }
 
 //f1 run in new thread

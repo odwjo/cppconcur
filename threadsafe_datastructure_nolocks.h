@@ -257,15 +257,15 @@ class lock_free_queue_v2{
 private :
     struct node;
     struct counted_node_ptr{
-        int external_count;
+        int external_count;//how many threads trying to reference
         node* ptr;
     };
     std::atomic<counted_node_ptr> head;
     std::atomic<counted_node_ptr> tail;
 
     struct node_counter{
-        unsigned internal_count:30;
-        unsigned external_counters:2;
+        unsigned internal_count:30;//how many threads tried
+        unsigned external_counters:2;//how many ptrs point to the node
     };
 
     struct node{
@@ -325,10 +325,10 @@ private :
         node_counter new_counter;
         do{//when catch the ptr->count
             new_counter = old_counter;
-            //side effect of this thread
+            //if the node was tail, this in-node ex_count was change to 1
             --new_counter.external_counters;//change in-node ex_counter
             new_counter.internal_count += count_increase;
-        }while(!counter.compare_exchange_strong(
+        }while(!counter.compare_exchange_strong(//wait other threads finish
                    old_counter, new_counter,
                    std::memory_order_acquire,
                    std::memory_order_relaxed));
@@ -346,6 +346,17 @@ public:
         head.store(new_counted_node);
         tail.store(new_counted_node);
     }
+    ~lock_free_queue_v2(){
+        /*
+        const counted_node_ptr old_head = head.load();
+        while(old_head.external_count){
+            head.store(head.ptr->next.load());
+            delete old_head.ptr;
+            old_head = head.load();
+        }*/
+        while(pop());
+        delete head.ptr;
+    }
 
     void push(T new_value){
         std::unique_ptr<T> new_data(new T(new_value));
@@ -362,7 +373,7 @@ public:
                         old_data, new_data.get())){//one thread enter
                 old_tail.ptr->next = new_next;
                 old_tail = tail.exchange(new_next);
-                free_external_counter(old_tail);
+                free_external_counter(old_tail);//--in-node ex_count
                 new_data.release();
                 break;
             }
@@ -388,5 +399,177 @@ public:
     }
 };
 
+template<typename T>
+class lock_free_queue_v3{
+private :
+    struct node;
+    struct counted_node_ptr{
+        int external_count;//how many threads trying to reference
+        node* ptr;
+    };
+    std::atomic<counted_node_ptr> head;
+    std::atomic<counted_node_ptr> tail;
+
+    struct node_counter{
+        unsigned internal_count:30;//how many threads tried
+        unsigned external_counters:2;//how many ptrs point to the node
+    };
+
+    struct node{
+        std::atomic<T*> data;
+        std::atomic<node_counter> count;
+        std::atomic<counted_node_ptr> next;
+
+        node(){
+            node_counter new_count;
+            new_count.internal_count = 0;
+            new_count.external_counters = 2;
+            count.store(new_count);
+
+            next.ptr = nullptr;
+            next.external_count = 0;
+        }
+        void release_ref(){
+            //every thread touches the node will
+            //decrease the internal_counter
+            node_conter old_counter =
+                    count.load(std::memory_order_relaxed);
+            node_counter new_counter;
+            do{
+                new_counter = old_counter;
+                --new_counter.internal_count;
+            }while(!count.compare_exchange_strong(
+                       old_counter,new_counter,
+                       std::memory_order_acquire,
+                       std::memory_order_relaxed));
+            if(!new_counter.internal_count &&
+               !new_counter.external_counters){
+                delete this;
+            }
+        }
+    };
+    static void increase_external_count(
+            std::atmic<counted_node_ptr>& counter,
+            counted_node_ptr& old_counter){
+        //every thread touches the node will
+        //increase the external_count
+        counted_node_ptr new_counter;
+        do{
+            new_counter = old_counter;
+            ++new_counter.external_count;
+        }while(!counter.compare_exchange_strong(
+                   old_counter, new_counter,
+                   std::memory_order_acquire,
+                   std::memory_order_relaxed));
+        old_counter.external_count = new_counter.external_count;
+    }
+    static void free_external_counter(counter_node_ptr& old_node_ptr){
+        node* const ptr = old_node_ptr.ptr;
+        //initialize external_count = internal_count + 2
+        int const count_increase = old_node_ptr.external_count-2;
+
+        node_counter old_counter = ptr->count.load(std::memory_order_relaxed);
+        node_counter new_counter;
+        do{//when catch the ptr->count
+            new_counter = old_counter;
+            //if the node was tail, this in-node ex_count was change to 1
+            --new_counter.external_counters;//change in-node ex_counter
+            new_counter.internal_count += count_increase;
+        }while(!counter.compare_exchange_strong(//wait other threads finish
+                   old_counter, new_counter,
+                   std::memory_order_acquire,
+                   std::memory_order_relaxed));
+        if(!new_counter.internal_count &&
+                !new_counter.external_counters){
+            delete ptr;
+        }
+    }
+    void set_new_tail(counted_node_ptr &old_tail,
+                      counted_node_ptr const &new_tail){
+        node* const current_tail_ptr = old_tail.ptr;
+        //until tail is set to new_tail
+        //or old_tail.ptr is changed by another thread(be exchanged)
+        while(!tail.compare_exchange_weak(old_tail, new_tail)
+              && old_tail.ptr == current_tail_ptr);
+        if(old_tail.ptr == current_tail_ptr)
+            //new tail is setted by this thread
+            free_external_counter(old_tail);
+        else//just leave
+            current_tail_ptr->release_ref();
+    }
+
+public:
+    lock_free_queue_v3(){
+        counted_node_ptr new_counted_node;
+        new_counted_node.external_count = 1;
+        new_counted_node.ptr = new node;
+        head.store(new_counted_node);
+        tail.store(new_counted_node);
+    }
+    ~lock_free_queue_v3(){
+        /*
+        const counted_node_ptr old_head = head.load();
+        while(old_head.external_count){
+            head.store(head.ptr->next.load());
+            delete old_head.ptr;
+            old_head = head.load();
+        }*/
+        while(pop());
+        delete head.ptr;
+    }
+    void push(T new_value){
+        std::unique_ptr<T> new_data(new T(new_value));
+        counted_node_ptr new_next;
+        new_next.ptr = new node;
+        new_next.external_count = 1;
+        counted_node_ptr old_tail = tail.load();
+
+        for(;;){
+            increase_external_count(tail,old_tail);
+
+            T* old_data = nullptr;
+            if(old_tail.ptr->data.compare_exchange_strong(
+                        old_data, new_data.get())){//one thread enter
+                counted_node_ptr old_next = {0};
+                //old tail.ptr->next was setted by another thread
+                if(!old_tail.ptr->next.compare_exchange_strong(
+                            old_next, new_next)){
+                    delete new_next.ptr;
+                    new_next = old_next;
+                }
+                set_new_tail(old_tail, new_next);
+                new_data.release();
+                break;
+            }else{//try help to construct dummy node
+                counted_node_ptr old_next = {0};
+                //if the caught thread didn't set,
+                if(old_tail.ptr->next.compare_exchange_strong(
+                            old_next, new_next)){
+                    old_new = new_next;
+                    new_next.ptr = new node;//for next round
+                }
+                set_new_tail(old_tail, old_next);
+            }
+        }
+    }
+    std::unique_ptr<T> pop(){
+        counted_node_ptr old_head = head.loal(std::memory_order_relaxed);
+        for(;;){
+            increase_external_count(head, old_head);
+            node* const ptr = old_head.ptr;
+            if(ptr == tail.load().ptr){
+                ptr->release_ref(); //not in book,but I think there should be
+                return std::unique_ptr<T>();
+            }
+            counted_node_ptr next = ptr->next.load();
+            if(head.compare_exchange_strong(old_head, next)){
+                T* const res = ptr->data.exchange(nullptr);
+                free_external_counter(old_head);
+                return std::unique_ptr<T>(res);
+            }
+            ptr->release_ref();//be waited by free_external_counter
+        }
+    }
+};
 
 #endif

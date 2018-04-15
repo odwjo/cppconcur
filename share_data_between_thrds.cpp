@@ -52,7 +52,7 @@ void foo(){
     xdw.process_data(malicious_function);
     //unprotected->do_something();
 }
-
+/*
 //an outline class definition for a thread-safe stack
 struct empty_stack:std::exception{
     const char* what() const throw();
@@ -61,45 +61,8 @@ struct empty_stack:std::exception{
 const char* empty_stack::what()const throw(){
     return "empty stack.^.";
 }
+*/
 
-template<typename T>
-class threadsafe_stack{
-    mutable std::mutex m;
-    std::stack<T> data;
-public:
-    threadsafe_stack(){}
-    threadsafe_stack(const threadsafe_stack& other){
-        std::lock_guard<std::mutex> lock(other.m);
-        data = other.data;
-    }
-
-    threadsafe_stack& operator=(const threadsafe_stack&)=delete;
-
-    void push(T new_value){
-        std::lock_guard<std::mutex> lock(m);
-        data.push(new_value);
-    }
-
-    std::shared_ptr<T> pop(){
-        std::lock_guard<std::mutex> lock(m);
-        if(data.empty()) throw empty_stack();
-        std::shared_ptr<T> const res(std::make_shared<T>(data.top()));
-        data.pop();
-        return res;
-    }
-
-    void pop(T &value){
-        std::lock_guard<std::mutex> lock(m);
-        if(data.empty()) throw empty_stack();
-        value = data.top();
-        data.pop();
-    }
-
-    bool empty() const{
-        std::lock_guard<std::mutex> lock(m);
-        return data.empty();
-    }
-};
 
 template<typename T>
 void popshow(T &t){
@@ -107,7 +70,7 @@ void popshow(T &t){
     std::cout << *r << std::endl;
 }
 //template void popshow(threadsafe_stack<int> &);
-
+/*
 void use_thrdsafe_stack(){
     threadsafe_stack<int> tss;
     std::vector<std::thread> vth(5);
@@ -119,7 +82,7 @@ void use_thrdsafe_stack(){
     }
     std::for_each(vth.begin(),vth.end(),std::mem_fn(&std::thread::join));
 
-}
+}*/
 
 //using std::lock() and std::lock_guard in a swap operation
 /*void swap(some_big_object &lhs, some_big_object& rhs);
